@@ -1,0 +1,38 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: ecotrack-db
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  servidor:
+    build: ./servidor
+    container_name: ecotrack-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      # Por defecto usa el Mongo local. Para usar Atlas:
+      #   MONGO_URI="mongodb+srv://..." docker compose up --build -d
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/ecotrack}
+    depends_on:
+      - mongo
+
+  cliente:
+    build:
+      context: ./cliente
+      args:
+        - VITE_API_URL=http://localhost:5000/api/activities
+    container_name: ecotrack-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - servidor
+
+volumes:
+  mongo_data:

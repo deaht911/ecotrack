@@ -1,0 +1,88 @@
+openapi: 3.0.0
+info:
+  title: EcoTrack API - Documentación de Optimización
+  version: 1.0.0
+  description: API REST para monitoreo de huella de carbono con compresión GZIP y cabeceras de seguridad Helmet.
+servers:
+  - url: /
+    description: Servidor actual
+tags:
+  - name: Actividades
+    description: Registro de actividades y su impacto en kg CO2
+paths:
+  /api/activities:
+    get:
+      tags: [Actividades]
+      summary: Obtiene todas las actividades registradas (más recientes primero)
+      responses:
+        '200':
+          description: Lista de actividades (comprimida con GZIP si supera 1 KB)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Activity'
+    post:
+      tags: [Actividades]
+      summary: Registra una nueva actividad
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityInput'
+            example:
+              description: Viaje en autobús al trabajo
+              category: Transporte
+              carbonKg: 2.5
+      responses:
+        '201':
+          description: Actividad creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activity'
+        '400':
+          description: Datos inválidos (campo faltante o categoría no permitida)
+  /api/activities/{id}:
+    delete:
+      tags: [Actividades]
+      summary: Elimina una actividad por su ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ObjectId de MongoDB
+      responses:
+        '200':
+          description: Actividad eliminada correctamente
+        '404':
+          description: Actividad no encontrada
+        '500':
+          description: ID inválido o error del servidor
+components:
+  schemas:
+    ActivityInput:
+      type: object
+      required: [description, category, carbonKg]
+      properties:
+        description:
+          type: string
+        category:
+          type: string
+          enum: [Transporte, Energía, Alimentación, Residuos]
+        carbonKg:
+          type: number
+    Activity:
+      allOf:
+        - $ref: '#/components/schemas/ActivityInput'
+        - type: object
+          properties:
+            _id:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
